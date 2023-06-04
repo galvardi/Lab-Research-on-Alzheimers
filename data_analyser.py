@@ -50,9 +50,12 @@ class DataAnalyser:
         return self.data.ICD10_Diags.apply(lambda s: bool(cholesterol_ICD10s_reg.search(s)))
 
     def get_column_data(self, column_name):
-        if "Diag" in column_name:
-            return self.data[column_name].apply(lambda s: 1 if s else 0)
-        if "Date" in column_name or column_name == "APOE_alles":
+        if "_Diag" in column_name or column_name == "AgeOfStopSmoking" or \
+                column_name == 'LDL_Cholesterol' or column_name == 'HDL_Cholesterol' or \
+                column_name == 'SmokingPacksYears' or column_name == 'DurationModerateActivity':
+            return self.data[column_name].apply(lambda s: 1 if s != "Prefer not to answer" else 0)
+        if "_Date" in column_name or column_name == "APOE_alles" or \
+                column_name == "BirthYear" or column_name == "BiologicalSex":
             return None
         # column is not a categorical column
         if column_name == "rs429358" or column_name == "rs7412" or \
@@ -62,6 +65,8 @@ class DataAnalyser:
         return self.data[column_name].apply(lambda s: self.get_column_line_data(column_name, s))
 
     def get_column_line_data(self, column_name, line):
+        if "|" in line:
+            line = line.split("|")[0]
         options_dict = columns[column_name]
         for options, value in options_dict.items():
             if line in options:
@@ -95,8 +100,8 @@ class DataAnalyser:
 
 
 column_to_id = {
-    'BirthYear': 34,
-    'BiologicalSex': 31,
+    # 'BirthYear': 34,
+    # 'BiologicalSex': 31,
     'Medication': 41202,
     'CardiovascularDiagnosis': 6150,
     'Diabetes diagnosed': 2443,
@@ -241,21 +246,21 @@ columns = {
     # 'Depression':
     # 'FromICD10_41270': {'F32.*', 'F33.*'},
     'BipolarAndMajorDepressionStat': {
-        ('Bipolar I Disorder', 'Bipolar II Disorder'): -1,
+        ('Bipolar I Disorder', 'Bipolar II Disorder', 'Prefer not to answer'): 0,
         ('No Bipolar or Depression'): 0,
         ('Single Probable major depression episode'): 1,
         ('Probable Recurrent major depression (moderate)'): 2,
         ('Probable Recurrent major depression (severe)'): 3},
 
     'ProfessionalInformedDepression': {
-        ('Prefer not to answer', 'Do not Know'): -1,
+        ('Prefer not to answer', 'Do not Know'): 0,
         ('Yes'): 1,
         ('No'): 0},
 
     # 'Anxiety':
     # 'FromICD10': ['F40.*', 'F41.*'],
     'ProfessionalInformedAnxiety': {
-        ('Prefer not to answer', 'Do not Know'): -1,
+        ('Prefer not to answer', 'Do not Know'): 0,
         ('Yes'): 1,
         ('No'): 0},
 
@@ -298,9 +303,9 @@ columns = {
     # '4179': None,  # todo get from data
     # '4080': None,  # todo get from data
     'CardiovascularDiagnosis': {('Prefer not to answer'): -1,
-                                ('None of the above'): 0},
+                                ('None of the above'): 0,
                                 ('Heart attack', 'Angina', 'Stroke'): 1,
-                                ('High blood pressure'): 2,
+                                ('High blood pressure'): 2},
 
     # 'BMI':
     'BMI': None,
@@ -332,30 +337,30 @@ columns = {
                                  'Religious group',
                                  'Other group activity'): 0,
                                 ('Adult education class'): 1},
-    'PlaysComputer': {('Prefer not to answer'): -1,
+    'PlaysComputer': {('Prefer not to answer'): 0,
                       ('Never/rarely'): 0,
                       ('Sometimes', 'Often'): 1},
-    'DurationHeavyDIY': {('Prefer not to answer', 'Do not know'): -1,
+    'DurationHeavyDIY': {('Prefer not to answer', 'Do not know'): 0,
                          ('Less than 15 minutes', 'Between 15 and 30 minutes',
                           'Between 30 minutes and 1 hour'): 1,
                          ('Between 1 and 1.5 hours', 'Between 1.5 and 2 hours',
                           'Between 2 and 3 hours', 'Over 3 hours'): 2},
 
     # 'Sex':
-    'BiologicalSex': None,
+    # 'BiologicalSex': None,
 
     # 'Age':
-    'BirthYear': None,
+    # 'BirthYear': None,
 
     # 'Education':
     'Qualifications': {
         ('Prefer not to answer', 'Do not know', 'None of the above'): 0,
-        ('O Level/GCSEs or equivalent',
+        ('O levels/GCSEs or equivalent',
          'A levels/AS levels or equivalent',
          'NVQ or HND or HNC or equivalent',
          'College or University degree',
          'CSEs or equivalent',
-         'Other professional qualification eg: nursing, teaching'): 1},
+         'Other professional qualifications eg: nursing, teaching'): 1},
 
     # 'Stress':  # todo add 1 when one of the options exists
     # '6145_Stress': {['Prefer not to answer']: -1,  # todo get from data, meanwhile from ICD10
@@ -415,11 +420,11 @@ columns = {
                        ('Bleeding gums', 'Mouth ulcers', 'Painful gums'): 1,},
 
    # 'Hearing':
-   'HearingAid': {('Prefer not to answer'): -1,
+   'HearingAid': {('Prefer not to answer'): 0,
                   ('No'): 0,
                   ('Yes'): 1},
 
-    'HearingDifficulties': {('Prefer not to answer'): -1,
+    'HearingDifficulties': {('Prefer not to answer'): 0,
                             ('No', 'I am completely deaf', 'Do not know'): 0,
                             ('Yes'): 1},
 
