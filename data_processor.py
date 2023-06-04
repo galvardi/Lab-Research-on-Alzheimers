@@ -1,4 +1,4 @@
-import Data_analyser
+import data_analyser
 import pandas as pd
 import re
 
@@ -10,7 +10,7 @@ class DataProcessor:
         self.data_analyser = data_analyser
 
     def process_medications(self):
-        depressed_med_col = self.data_analyser.get_depressed_meds()
+        depressed_med_col = self.data_analyser.get_depression_meds()
         self.new_data['depress_medication'] = depressed_med_col.astype(int)
         stress_med_col = self.data_analyser.get_stress_meds()
         self.new_data['stress_medication'] = stress_med_col.astype(int)
@@ -43,9 +43,11 @@ class DataProcessor:
         self.process_medications()
         self.process_ICD10()
         for col in self.data:
-            if col == 'ICD10_Diags' or col == 'Medications':
+            if col == 'ICD10_Diags' or col == 'Medication':
                 continue
-            self.new_data[col] = self.data_analyser.get_column_data(col)
+            genarate_new_col = self.data_analyser.get_column_data(col)
+            if genarate_new_col is not None:
+                self.new_data[col] = genarate_new_col
 
 
     def get_data(self):
