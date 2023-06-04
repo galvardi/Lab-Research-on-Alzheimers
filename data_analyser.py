@@ -287,7 +287,7 @@ columns = {
                          ('Once or twice a week',
                           'Three or four times a week'): 1,
                          ('Daily or almost daily'): 2},
-
+#######
     # 'Cardiovascular':
     # 'FromICD10': ['I10', 'R03'],
     # '6177_Medication': {['Blood pressure medication']: 1,
