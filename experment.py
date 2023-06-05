@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from model import Model
 from model import convertToOneHot, DataSet_meta
+from sklearn.model_selection import train_test_split
 import optuna
 
 
@@ -17,11 +18,11 @@ LABEL_COL_BIG = 40
 SMALL = "saves/temp_small.csv"
 BIG = "saves/temp_tomer.csv"
 
-def get_data(big):
+def get_data(use_full):
     # saved = False
     saved = True
     if not saved: # if you want to load parsed dataset from disk
-        if big:
+        if use_full:
             data = pd.read_csv(BIG).fillna('Prefer not to answer')
         else:
             data = pd.read_csv(SMALL).fillna('Prefer not to answer')
@@ -45,7 +46,7 @@ def get_data(big):
         # dataset_sick = alzhmiers_only.to_numpy()
 
         dataset = processor.new_data.to_numpy()
-        if big:
+        if use_full:
             labels = dataset[:, LABEL_COL_BIG]
             dataset = np.delete(dataset, LABEL_COL_BIG, axis=1)
             np.save("saves/dataset_big.npy", dataset)
@@ -59,7 +60,7 @@ def get_data(big):
         np_load_old = np.load
         # modify the default parameters of np.load
         np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True, **k)
-        if big:
+        if use_full:
             dataset = np.load("saves/dataset_big.npy")
             labels = np.load("saves/labels_big.npy")
         else:
@@ -69,20 +70,6 @@ def get_data(big):
     return dataset, labels
 
 
-def shuffle_dataset():
-    global X_train, Y_train, X_valid, Y_valid, X_test, Y_test
-    train_sample_indices = np.arange(N_train)
-    np.random.shuffle(train_sample_indices)
-    X_train = X_train[train_sample_indices, :]
-    Y_train = Y_train[train_sample_indices]
-    valid_sample_indices = np.arange(N_valid)
-    np.random.shuffle(valid_sample_indices)
-    X_valid = X_valid[valid_sample_indices, :]
-    Y_valid = Y_valid[valid_sample_indices]
-    test_sample_indices = np.arange(N_test)
-    np.random.shuffle(test_sample_indices)
-    X_test = X_test[test_sample_indices, :]
-    Y_test = Y_test[test_sample_indices]
 
 def train_model(): # for training without trials
     global model
@@ -139,30 +126,33 @@ def callback(study, trial):
 def adjust_labels_for_model(labels_init):
     return np.c_[np.ones(labels_init.shape) - labels_init,labels_init]
 
+def get_gates(data):
+    global model
+    return model.get_prob_alpha(data)
+
 
 if __name__ == '__main__':
-    dataset_init, labels_init = get_data(False) #True means full dataset /
-    # False means small
-    ln = int(labels_init.shape[0]/2)
-    labels_init[:ln] = 1. #todo adding syntetic labels
+    #___init___
+    use_full_dataset = False #True means full dataset # False means small
+    use_vaildation = False
+    train_portion = 0.7
+    test_portion = 0.3
+
+    dataset_init, labels_init = get_data(use_full_dataset)
     labels = adjust_labels_for_model(labels_init)
+    X_valid = np.empty(0)
+    Y_valid = np.empty(0)
+    X_train, X_test, Y_train, Y_test = train_test_split(dataset_init,
+                                                        labels,
+                                                        test_size=test_portion, train_size=train_portion)
+    if use_vaildation:
+        X_test, X_valid = np.array_split(X_test,2,axis=0)
+        Y_test, Y_valid = np.array_split(Y_test,2,axis=0)
 
-
-    N_train = 1500
-    N_valid = 300
-    N_test = 300
-    D = dataset_init.shape[1]
     np.random.seed(10)
 
     # organize data for model
-    X_train = dataset_init[:N_train,:]
-    Y_train = labels[:N_train,:]
-    X_valid = dataset_init[N_train:N_train+N_valid,:]
-    Y_valid = labels[N_train:N_train+N_valid,:]
-    X_test = dataset_init[N_train+N_valid:N_train+N_valid+N_test,:]
-    Y_test = labels[N_train+N_valid:N_train+N_valid+N_test,:]
 
-    shuffle_dataset()
 
     dataset = DataSet_meta(
         **{'_data': X_train, '_labels': Y_train,
@@ -186,28 +176,27 @@ if __name__ == '__main__':
 
 
 
-    #using trials optima :
+    # using trials optima :
     model = None
 
-    # saved_model = True
-    saved_model = False
-    if saved_model:
-        model = Model(**model_params)
-        model.load("saves/checkpoint")
-    else:
-        # best_model = None
-        # study = optuna.create_study(pruner=None)
-        # # originaly 20 trials
-        # study.optimize(lstg_objective, n_trials=2, callbacks=[callback])
 
-        # not using optima
-        # training_params = ({**training_params, 'lr':
-        #     0.07512140104607376, 'num_epoch': 5000})  # from optima
-        training_params = ({**training_params, 'lr':
-            0.07512140104607376, 'num_epoch': 10})  # from optima
-        train_model()
-        model.save(1, "saves/")
-    print()
+    # saved_model = True
+    model = Model(**model_params)
+    # model.load("saves/checkpoint") #load doesn't work
+
+    # best_model = None
+    # study = optuna.create_study(pruner=None)
+    # # originally 20 trials
+    # study.optimize(lstg_objective, n_trials=2, callbacks=[callback])
+
+    # not using optima
+    training_params = ({**training_params, 'lr':
+        0.07512140104607376, 'num_epoch': 5000})  # from optima
+    train_model()
+    # model.save(1, "saves/")
     # patient, patient_lab = dataset.test_data[0], dataset.test_labels[0]
     # model.sess.run()
+    predictions = model.test(X_test)
+    # gates = get_gates(patient)
     print()
+
