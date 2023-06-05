@@ -2,7 +2,6 @@ import data_analyser
 import pandas as pd
 import re
 
-
 class DataProcessor:
     def __init__(self, data : pd.DataFrame, data_analyser : data_analyser.DataAnalyser):
         self.data = data
@@ -16,6 +15,7 @@ class DataProcessor:
         self.new_data['stress_medication'] = stress_med_col.astype(int)
         anxiety_med_col = self.data_analyser.get_anxiety_meds()
         self.new_data['anxiety_medication'] = anxiety_med_col.astype(int)
+        # todo add medications from 6153 and 6177
 
     def process_ICD10(self):
         depression_ICD10_col = self.data_analyser.get_depression_ICD10()
