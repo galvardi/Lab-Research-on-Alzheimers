@@ -1,0 +1,11 @@
+___in init comment___
+
+* set use_full_dataset - True means full dataset False means mini(5000)
+
+* set use_vaildation - to split test into valid aswell (only relevent with optuna)
+* set train ,test split - validate will be half of test(for now)
+
+
+* to get model prediction use model.test(data_to_test)
+
+* to get gates ( i still neeed to work on it)

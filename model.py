@@ -533,7 +533,8 @@ class Model(object):
         dp_alpha = self.sess.run(self.alpha,feed_dict={self.X: X_in,self.is_train:False,})
         return dp_alpha
 
-    def get_prob_alpha(self,X_in):#todo returns the gate vector for given samp
+    def get_prob_alpha(self,X_in): #todo returns the gate vector for given
+        # samp
         """
         convert the raw alpha into the actual probability
         """
@@ -589,8 +590,7 @@ class Model(object):
             # Loop over all batches
             for i in range(total_batch):
                 batch_xs, batch_ys,batch_zs = dataset.next_batch(batch_size)
-                                
-                
+
                 _,c = self.sess.run([self.train_step, self.loss],feed_dict={self.X: batch_xs,
                                                               self.y: batch_ys,
                                                               self.Z: batch_zs,
