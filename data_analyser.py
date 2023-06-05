@@ -19,12 +19,13 @@ class DataAnalyser:
                           'AgeLastEpisodeOfDepression', 'DBloodPressure',
                                'SBloodPressure', 'WalkingActivity_NumDaysWeek', 'SleepDuration',
                                'BMI', 'AgeAtDeath']
-        self.not_appears_in_new_data_cols = ["rs429358", "rs7412", "BirthYear", "BiologicalSex",
+        self.not_appears_in_new_data_cols = ["rs429358", "rs7412",
+                                             # "BirthYear", "BiologicalSex",
                                   'eid', 'AgeRecruitment', 'ICD10_Dates', 'Alzheimer_Date',
                                   'Mild Cognitive_Diag', 'Mild Cognitive_Date',
                                   'Gingiv_Diag', 'Gingiv_Date', 'ICD10_Diag', 'Alcohol_Date',
                                 'Medication']
-        self.cols_to_divide = {"CardioInsulinMedications": ('CardioMedications','InsulinMedications'),
+        self.cols_to_divide = {"CardioInsulinMedications": ('CardioMedications','InsulinMedications', 'CholesterolMedications'),
                                'MedsCholesterolHypertensionDiabetes': ('MedsCardiovascular', 'MedsInsulin'),
                                "LeisureSocialActivities": ('MentalActivities', 'SocialActivities')}
 
@@ -75,7 +76,7 @@ class DataAnalyser:
             self.data[original_name].fillna("nan")
             return self.data[original_name].apply(lambda s: self.get_keep_cols(s))
         if original_name == "APOE_alles":
-            return self.data[original_name].apply(lambda s: 1 if s != "E4, E4" else 0)
+            return self.data[original_name].apply(lambda s: 1 if s == "E4, E4" else 0)
         # column is a categorical column
         return self.data[original_name].apply(lambda s: self.get_column_line_data(new_column_name, s))
 
@@ -83,8 +84,8 @@ class DataAnalyser:
     def get_keep_cols(self, s):
         if type(s) == str and "|" in s:
             s = float(s.split("|")[-1])
-        return int(float(s) if s not in ["nan", "Unable to walk", "Prefer not to answer", "Do not know"] \
-                   else np.nan)
+        return float(s) if s not in ["nan", "Unable to walk", "Prefer not to answer", "Do not know"] \
+                   else np.nan
 
     def get_column_line_data(self, column_name, line):
         if database.columns[column_name] is None:
@@ -96,35 +97,22 @@ class DataAnalyser:
             if line in options:
                 return value
 
+    def calculate_age_at_diagnosis(self, row, birth_year, alzheimer_date):
+        if alzheimer_date == 'nan':
+            return None
+        if "/" in alzheimer_date:
+            alzheimer_year = alzheimer_date.split("/")[-1]
+        if "-" in alzheimer_date:
+            alzheimer_year = alzheimer_date.split("-")[0]
+        return int(alzheimer_year) - int(birth_year)
+
     def get_alzheimers_age_of_diagnosis(self):
-        return self.data.apply(lambda row: self.calculate_age_at_diagnosis(row['BirthYear'], row['Alzheimer_Date']),
+        return self.data.apply(lambda row: self.calculate_age_at_diagnosis(row, row['BirthYear'], row['Alzheimer_Date']),
                                axis=1)
-
-    def calculate_age_at_diagnosis(self, birth_year, alzheimer_date):
-        date_format = "%d/%m/%Y"
-        if not alzheimer_date:
-            return None
-
-        try:
-            # Convert birth year to datetime object
-            birth_date = datetime.strptime(f"01/01/{birth_year}", date_format)
-
-            # Convert Alzheimer's diagnosed date to datetime object
-            diagnosed_date = datetime.strptime(alzheimer_date,
-                                               date_format)
-
-            # Calculate the age at diagnosis
-            age_at_diagnosis = (diagnosed_date - birth_date).days / 365.25
-
-            return age_at_diagnosis
-
-        except ValueError:
-            return None
 
     def get_diagnosed_since_recruitment(self):
         age_diagnosed = self.get_alzheimers_age_of_diagnosis()
-        return age_diagnosed - self.data['AgeRecruitment']
-        #self.apply(lambda row: row['AgeDiagnosed'] - row['AgeRecruitment'], axis=1)
+        return age_diagnosed.sub(self.data['AgeRecruitment'])
 
     def find_max_value(self, row, categories_dict):
         # Generator expression to iterate over stripped elements

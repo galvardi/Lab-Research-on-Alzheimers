@@ -2,6 +2,9 @@ import data_analyser
 import pandas as pd
 import re
 
+import database
+
+
 class DataProcessor:
     def __init__(self, data : pd.DataFrame, data_analyser : data_analyser.DataAnalyser):
         self.data = data
@@ -46,7 +49,18 @@ class DataProcessor:
                 self.generate_divided_column(col)
                 continue
             self.add_column_to_new_data(col)
+        self.add_years_from_rec_to_diagnosis()
+        self.clean_nan_values()
 
+    def clean_nan_values(self):
+        for col in self.new_data:
+            if col in database.zero_cols:
+                self.new_data[col] = self.new_data[col].fillna(0)
+            if col in database.means_cols:
+                self.new_data[col] = self.new_data[col].fillna(self.new_data[col].mean())
+    def add_years_from_rec_to_diagnosis(self):
+        years_from_rec_to_diagnosis = self.data_analyser.get_diagnosed_since_recruitment()
+        self.new_data['years_from_rec_to_diagnosis'] = years_from_rec_to_diagnosis
     def add_column_to_new_data(self, col):
         generated_new_col = self.data_analyser.get_column_data(col, col)
         if generated_new_col is not None:

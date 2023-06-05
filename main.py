@@ -12,8 +12,8 @@ if __name__ == '__main__':
     processor = data_processor.DataProcessor(data, analyser)
     #
     processor.process_data()
-    a = 5
-    flag = False
-    for col in processor.new_data:
-        flag = pd.api.types.is_string_dtype(processor.new_data[col].dtype)
-    print(flag)
+    # get only the rows with column "years_from_rec_to_diagnosis" > 7 and < 14
+    diagnosed_data = processor.new_data.loc[(processor.new_data['years_from_rec_to_diagnosis'] > 7) &
+                                            (processor.new_data['years_from_rec_to_diagnosis'] < 14) &
+                                            (processor.new_data['APOE_alles'] == 0) ]
+    a = 3

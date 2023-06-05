@@ -58,6 +58,52 @@ column_to_id = {
     'APOE_alles': 1220  # remove E4 E4 from the data
 }
 
+means_cols = [
+'SleepDuration',
+'AlcoholFrequency',
+'DBloodPressure',
+'SBloodPressure',
+'BMI',
+'DurationModerateActivity',
+'ModeratePhysicalActivity_NumDaysWeek',
+'VigorousPhysicalActivity_NumDaysWeek',
+'WalkingActivity_NumDaysWeek',
+'SocialActivities',
+'FrequencyFriendsFamilyVisits',
+'MentalActivities',
+'DurationHeavyDIY',
+'AgeAtDeath',
+'Qualifications',
+'IllnessInjuriesStressLast2Years',
+'HDL_Cholesterol',
+'LDL_Cholesterol',
+'SeenGpForNervesAnxietyTensionDepression',
+'SeenShrinkForNervesAnxietyTensionDepression'
+]
+
+zero_cols = [
+'BipolarAndMajorDepressionStat',
+'ProfessionalInformedDepression',
+'DurationOfWorstDepression',
+'AgeLastEpisodeOfDepression',
+'ProfessionalInformedAnxiety',
+'Insomnia',
+'AgeOfStopSmoking',
+'SmokingStatus',
+'SmokingPacksYears',
+'CardioMedications',
+'MedsCardiovascular',
+'CardiovascularDiagnosis',
+'PlaysComputer',
+'InsulinMedications',
+'MedsInsulin',
+'Diabetes diagnosed',
+'CholesterolMedications',
+'DentalProblems',
+'HearingAid',
+'HearingDifficulties',
+]
+
 depression_medications = [
     'fluoxetine', 'sertraline', 'escitalopram', 'paroxetine', 'citalopram',
     'venlafaxine', 'duloxetine', 'desvenlafaxine', 'bupropion', 'mirtazapine',
@@ -230,10 +276,10 @@ columns = {
                           'Between 2 and 3 hours', 'Over 3 hours'): 2},
 
     # Sex:
-    'BiologicalSex': None,
+    'BiologicalSex': None,  # todo make negative data
 
     # Age:
-    'BirthYear': None,
+    'BirthYear': None,  # todo make negative data
     'AgeAtDeath': None,
 
     # Education:
@@ -275,17 +321,13 @@ columns = {
                            ('Yes'): 1},
 
     # Cholesterol:
-    'CardioInsulinMedications': { ('Prefer not to answer', 'Do not know'): np.nan,
+    'CholesterolMedications': { ('Prefer not to answer', 'Do not know'): np.nan,
                                 ('Cholesterol lowering medication'): 1,
                                  ('Insulin', 'Blood pressure medication',
                                   'None of the above'): 0},
 
     'HDL_Cholesterol': None,
     'LDL_Cholesterol': None,
-
-    # APOE_E4E4:
-    'rs429358': None,
-    'rs7412': None,
 
     # Gums:
     'DentalProblems': {('Prefer not to answer'): np.nan,
