@@ -13,7 +13,4 @@ if __name__ == '__main__':
     #
     processor.process_data()
     # get only the rows with column "years_from_rec_to_diagnosis" > 7 and < 14
-    diagnosed_data = processor.new_data.loc[(processor.new_data['years_from_rec_to_diagnosis'] > 7) &
-                                            (processor.new_data['years_from_rec_to_diagnosis'] < 14) &
-                                            (processor.new_data['APOE_alles'] == 0) ]
     a = 3

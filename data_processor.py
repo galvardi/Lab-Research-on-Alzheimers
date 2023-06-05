@@ -51,7 +51,18 @@ class DataProcessor:
             self.add_column_to_new_data(col)
         self.add_years_from_rec_to_diagnosis()
         self.clean_nan_values()
+        self.clean_EPOE_and_years_values()
 
+    def clean_EPOE_and_years_values(self):
+        # remove all the rows with EPOE = 1
+        diagnosed_data = self.new_data.loc[(self.new_data['years_from_rec_to_diagnosis'] > 7) &
+                                            (self.new_data['years_from_rec_to_diagnosis'] < 14) &
+                                            (self.new_data['APOE_alles'] == 0)]
+        # tate all threesomes of BirthYear and BiologicalSex and Alzheimer_Diag=0 from the diagnosed_data
+        diagnosed_combinations = diagnosed_data.groupby(['BirthYear', 'BiologicalSex']).size().reset_index().rename(columns={0: 'count'})
+        # take rows that matches BirthYear and BiologicalSex to a specific row in diagnosed_data, where the Alzheimer_Diag = 0(negatives)
+        negatives = [row for row in self.new_data if row.BirthYear in diagnosed_data['BirthYear'].values and row.BiologicalSex in diagnosed_data['BiologicalSex'].values and row.Alzheimer_Diag == 0]
+        b=7
     def clean_nan_values(self):
         for col in self.new_data:
             if col in database.zero_cols:
