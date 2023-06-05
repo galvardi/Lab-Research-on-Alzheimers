@@ -15,7 +15,6 @@ class DataProcessor:
         self.new_data['stress_medication'] = stress_med_col.astype(int)
         anxiety_med_col = self.data_analyser.get_anxiety_meds()
         self.new_data['anxiety_medication'] = anxiety_med_col.astype(int)
-        # todo add medications from 6153 and 6177
 
     def process_ICD10(self):
         depression_ICD10_col = self.data_analyser.get_depression_ICD10()
@@ -30,8 +29,6 @@ class DataProcessor:
         self.new_data['gingivitis_ICD10'] = gingivitis_ICD10_col.astype(int)
         diabetes_ICD10_col = self.data_analyser.get_diabetes_ICD10()
         self.new_data['diabetes_ICD10'] = diabetes_ICD10_col.astype(int)
-        mild_cognitive_impairment_ICD10_col = self.data_analyser.get_mild_cognitive_ICD10()
-        self.new_data['mild_cognitive_impairment_ICD10'] = mild_cognitive_impairment_ICD10_col.astype(int)
         cardiovascular_ICD10_col = self.data_analyser.get_cardiovascular_ICD10()
         self.new_data['cardiovascular_ICD10'] = cardiovascular_ICD10_col.astype(int)
         smoking_ICD10_col = self.data_analyser.get_smoking_ICD10()
@@ -43,19 +40,25 @@ class DataProcessor:
         self.process_medications()
         self.process_ICD10()
         for col in self.data:
-            if col == 'ICD10_Diags' or col == 'Medication':
+            if col in self.data_analyser.not_appears_in_new_data_cols:
                 continue
-            genarate_new_col = self.data_analyser.get_column_data(col)
-            if genarate_new_col is not None:
-                self.new_data[col] = genarate_new_col
+            if col in self.data_analyser.cols_to_divide.keys():
+                self.generate_divided_column(col)
+                continue
+            self.add_column_to_new_data(col)
 
+    def add_column_to_new_data(self, col):
+        generated_new_col = self.data_analyser.get_column_data(col, col)
+        if generated_new_col is not None:
+            self.new_data[col] = generated_new_col
 
-    def get_data(self):
-        return self.data
-
-    def set_data(self, data):
-        self.data = data
-
+    def generate_divided_column(self, col):
+        cols_num_to_divide_to = len(self.data_analyser.cols_to_divide[col])
+        cols_names_to_divide_to = self.data_analyser.cols_to_divide[col]
+        for i in range(cols_num_to_divide_to):
+            generated_new_col = self.data_analyser.get_column_data(col, cols_names_to_divide_to[i])
+            if generated_new_col is not None:
+                self.new_data[cols_names_to_divide_to[i]] = generated_new_col
 
 # reg = re.compile(rf'^R03\b|\|R03\b')
 # "isLowBP = df.ICD10_Diags.apply(lambda s: bool(reg.search(s)))"

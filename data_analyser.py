@@ -2,6 +2,7 @@ import csv
 import database
 import re
 import pandas as pd
+import numpy as np
 from datetime import datetime
 
 class DataAnalyser:
@@ -10,6 +11,23 @@ class DataAnalyser:
         self.depressed_reg = re.compile(database.depression_regex)
         self.stressed_reg = re.compile(database.stress_regex)
         self.anxiety_reg = re.compile(database.anxiety_regex)
+        self.keep_same_cols = ["AgeOfStopSmoking", 'LDL_Cholesterol',
+                          'HDL_Cholesterol', 'SmokingPacksYears',
+                          'DurationModerateActivity',
+                          'ModeratePhysicalActivity_NumDaysWeek',
+                          'VigorousPhysicalActivity_NumDaysWeek',
+                          'AgeLastEpisodeOfDepression', 'DBloodPressure',
+                               'SBloodPressure', 'WalkingActivity_NumDaysWeek', 'SleepDuration',
+                               'BMI', 'AgeAtDeath']
+        self.not_appears_in_new_data_cols = ["rs429358", "rs7412", "BirthYear", "BiologicalSex",
+                                  'eid', 'AgeRecruitment', 'ICD10_Dates', 'Alzheimer_Date',
+                                  'Mild Cognitive_Diag', 'Mild Cognitive_Date',
+                                  'Gingiv_Diag', 'Gingiv_Date', 'ICD10_Diag', 'Alcohol_Date',
+                                'Medication']
+        self.cols_to_divide = {"CardioInsulinMedications": ('CardioMedications','InsulinMedications'),
+                               'MedsCholesterolHypertensionDiabetes': ('MedsCardiovascular', 'MedsInsulin'),
+                               "LeisureSocialActivities": ('MentalActivities', 'SocialActivities')}
+
 
     def get_depression_meds(self):
         return self.data['Medication'].apply(lambda s: bool(self.depressed_reg.search(s)))
@@ -50,22 +68,27 @@ class DataAnalyser:
     def get_cholesterol_ICD10(self):
         return self.data.ICD10_Diags.apply(lambda s: bool(database.cholesterol_ICD10s_reg.search(s)))
 
-    def get_column_data(self, column_name):
-        if "_Diag" in column_name or column_name == "AgeOfStopSmoking" or \
-                column_name == 'LDL_Cholesterol' or column_name == 'HDL_Cholesterol' or \
-                column_name == 'SmokingPacksYears' or column_name == 'DurationModerateActivity':
-            return self.data[column_name].apply(lambda s: 1 if s != "Prefer not to answer" else 0)
-        if "_Date" in column_name or column_name == "APOE_alles" or \
-                column_name == "BirthYear" or column_name == "BiologicalSex":
-            return None
-        # column is not a categorical column
-        if column_name == "rs429358" or column_name == "rs7412" or \
-        database.columns[column_name] is None:
-            return self.data[column_name].apply(lambda s: int(s) if len(s) == 1 else 0)
+    def get_column_data(self, original_name,  new_column_name):
+        if "_Diag" in original_name:
+            return self.data[original_name].apply(lambda s: 1 if s != "Prefer not to answer" else 0)
+        if original_name in self.keep_same_cols:
+            self.data[original_name].fillna("nan")
+            return self.data[original_name].apply(lambda s: self.get_keep_cols(s))
+        if original_name == "APOE_alles":
+            return self.data[original_name].apply(lambda s: 1 if s != "E4, E4" else 0)
         # column is a categorical column
-        return self.data[column_name].apply(lambda s: self.get_column_line_data(column_name, s))
+        return self.data[original_name].apply(lambda s: self.get_column_line_data(new_column_name, s))
+
+
+    def get_keep_cols(self, s):
+        if type(s) == str and "|" in s:
+            s = float(s.split("|")[-1])
+        return int(float(s) if s not in ["nan", "Unable to walk", "Prefer not to answer", "Do not know"] \
+                   else np.nan)
 
     def get_column_line_data(self, column_name, line):
+        if database.columns[column_name] is None:
+            return line
         options_dict = database.columns[column_name]
         if "|" in line:
             return self.find_max_value(line, options_dict)
@@ -79,7 +102,6 @@ class DataAnalyser:
 
     def calculate_age_at_diagnosis(self, birth_year, alzheimer_date):
         date_format = "%d/%m/%Y"
-
         if not alzheimer_date:
             return None
 
@@ -106,10 +128,10 @@ class DataAnalyser:
 
     def find_max_value(self, row, categories_dict):
         # Generator expression to iterate over stripped elements
-        elements = (element.strip() for element in text.split('|'))
+        elements = (element.strip() for element in row.split('|'))
         # Generator expression to get valid values
-        valid_values = (dictionary.get(element) for element in elements if
-                        element in dictionary)
+        valid_values = (categories_dict.get(element) for element in elements if
+                        element in categories_dict)
         # Find the maximal value with default=None if no valid values found
         max_value = max(valid_values, default=0)
         return max_value
