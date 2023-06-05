@@ -18,9 +18,9 @@ SMALL = "saves/temp_small.csv"
 BIG = "saves/temp_tomer.csv"
 
 def get_data(big):
-    saved = False
-    # saved = True
-    if not saved:
+    # saved = False
+    saved = True
+    if not saved: # if you want to load parsed dataset from disk
         if big:
             data = pd.read_csv(BIG).fillna('Prefer not to answer')
         else:
@@ -85,6 +85,7 @@ def shuffle_dataset():
     Y_test = Y_test[test_sample_indices]
 
 def train_model(): # for training without trials
+    global model
     model = Model(**model_params)
     train_acces, train_losses, val_acces, val_losses = model.train(
                                             dataset=dataset,**training_params)
@@ -94,7 +95,8 @@ def train_model(): # for training without trials
     #       f"val_acces - {val_acces[-1]}, "
     #       f"val_losses - {val_losses[-1]}")
     print(f"train loss {train_losses[-1]}")
-    model.save(1, "saves/")
+
+
     print("Fin training")
 
 
@@ -139,13 +141,14 @@ def adjust_labels_for_model(labels_init):
 
 
 if __name__ == '__main__':
-    dataset_init, labels_init = get_data(False)
+    dataset_init, labels_init = get_data(False) #True means full dataset /
+    # False means small
     ln = int(labels_init.shape[0]/2)
     labels_init[:ln] = 1. #todo adding syntetic labels
     labels = adjust_labels_for_model(labels_init)
 
 
-    N_train = 3500
+    N_train = 1500
     N_valid = 300
     N_test = 300
     D = dataset_init.shape[1]
@@ -184,17 +187,27 @@ if __name__ == '__main__':
 
 
     #using trials optima :
-
     model = None
-    # best_model = None
-    # study = optuna.create_study(pruner=None)
-    # # originaly 20 trials
-    # study.optimize(lstg_objective, n_trials=2, callbacks=[callback])
 
-    # not using optima
-    training_params = ({**training_params, 'lr':
-        0.07512140104607376, 'num_epoch': 5000})  # from trials
-    train_model()
-    # model = train
+    # saved_model = True
+    saved_model = False
+    if saved_model:
+        model = Model(**model_params)
+        model.load("saves/checkpoint")
+    else:
+        # best_model = None
+        # study = optuna.create_study(pruner=None)
+        # # originaly 20 trials
+        # study.optimize(lstg_objective, n_trials=2, callbacks=[callback])
 
+        # not using optima
+        # training_params = ({**training_params, 'lr':
+        #     0.07512140104607376, 'num_epoch': 5000})  # from optima
+        training_params = ({**training_params, 'lr':
+            0.07512140104607376, 'num_epoch': 10})  # from optima
+        train_model()
+        model.save(1, "saves/")
+    print()
+    # patient, patient_lab = dataset.test_data[0], dataset.test_labels[0]
+    # model.sess.run()
     print()
