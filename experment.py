@@ -12,11 +12,16 @@ import data_processor
 import data_analyser
 import pandas as pd
 
-# label_col = 37
-# label_col = 40
 
 SMALL = "saves/small_data.csv"
 BIG = "saves/temp.csv"
+
+def see_res(path):
+    old = np.load
+    np.load = lambda *a, **k: old(*a, allow_pickle=True, **k)
+    k = np.load(path)
+    print(k)
+    np.load = old
 
 def get_data(use_full):
     # saved = False
@@ -145,8 +150,7 @@ def split_data(dataset_init, labels, label_split, validation):
         lab_neg,
         test_size=test_portion,
         train_size=train_portion)
-    X_valid = np.empty(0)
-    Y_valid = np.empty(0)
+
 
     if validation:
         X_valid_pos, X_test_pos, Y_valid_pos, Y_test_pos = train_test_split(
@@ -163,24 +167,27 @@ def split_data(dataset_init, labels, label_split, validation):
         Y_valid = np.vstack([Y_valid_neg, Y_valid_pos])
         X_valid , Y_valid = unison_shuffled_copies(X_valid, Y_valid)
 
+
     X_train = np.vstack([X_train_neg, X_train_pos])
     X_test = np.vstack([X_test_neg, X_test_pos])
     Y_train = np.vstack([Y_train_neg, Y_train_pos])
     Y_test = np.vstack([Y_test_neg, Y_test_pos])
     X_train, Y_train = unison_shuffled_copies(X_train, Y_train)
     X_test, Y_test = unison_shuffled_copies(X_test, Y_test)
+    if not validation:
+        X_valid = X_test
+        Y_valid = Y_test
     return X_train, Y_train, X_test, Y_test, X_valid , Y_valid
 
 if __name__ == '__main__':
     #___init___
-    # old = np.load
-    # np.load = lambda *a, **k: old(*a, allow_pickle=True, **k)
-    # k = np.load("saves/features.npy")
+
 
     use_full_dataset = True #True means full dataset # False means small
-    use_vaildation = True
-    train_portion = 0.7
-    test_portion = 0.3
+    use_vaildation = False
+    use_optina = False
+    train_portion = 0.9
+    test_portion = 1 - train_portion
 
     dataset_init, labels_init, features = get_data(use_full_dataset)
     label_split = np.where(labels_init == 0)[0][0]
@@ -214,7 +221,7 @@ if __name__ == '__main__':
                     'hidden_layers_node': [100, 50, 30],
                     'output_node': 2, #classification
                     'feature_selection': True,
-                    'gating_net_hidden_layers_node': [500],
+                    'gating_net_hidden_layers_node': [100],
                     'display_step': 1000,
                     'activation_gating': 'tanh',
                     'activation_pred': 'l_relu',
@@ -227,21 +234,19 @@ if __name__ == '__main__':
     # using trials optima :
     model = None
 
-
-    # saved_model = True
-    # model = Model(**model_params)
-    model = None
-    # model.load("saves/checkpoint") #load doesn't work
-
-    best_model = None
-    study = optuna.create_study(pruner=None)
-    # originally 20 trials
-    study.optimize(lstg_objective, n_trials=3, callbacks=[callback])
+    # __optona__
+    if use_optina:
+        best_model = None
+        study = optuna.create_study(pruner=None)
+        # originally 20 trials
+        study.optimize(lstg_objective, n_trials=3, callbacks=[callback])
 
     # not using optima
-    # training_params = ({**training_params, 'lr':
-    #     0.07512140104607376, 'num_epoch': 5000})  # from optima
-    # train_model()
+    else:
+        model = Model(**model_params)
+        training_params = ({**training_params, 'lr':
+            0.05418309743636845, 'num_epoch': 5000})  # from optima
+        train_model()
 
     predictions = predict(X_test)
     # patient = X_test[:2,:]
@@ -251,4 +256,5 @@ if __name__ == '__main__':
     np.save("saves/gates_labels.npy",return_labels(Y_test))
     np.save("saves/preds.npy",predictions)
     print()
+
 
