@@ -58,11 +58,33 @@ class DataProcessor:
         diagnosed_data = self.new_data.loc[(self.new_data['years_from_rec_to_diagnosis'] > 7) &
                                             (self.new_data['years_from_rec_to_diagnosis'] < 14) &
                                             (self.new_data['APOE_alles'] == 0)]
-        # tate all threesomes of BirthYear and BiologicalSex and Alzheimer_Diag=0 from the diagnosed_data
+        non_diagnosed_data = self.new_data.loc[(self.new_data['alzheimer_ICD10'] == 0)]
+        # tate all combinations of BirthYear and BiologicalSex and Alzheimer_Diag=0 from the diagnosed_data
         diagnosed_combinations = diagnosed_data.groupby(['BirthYear', 'BiologicalSex']).size().reset_index().rename(columns={0: 'count'})
-        # take rows that matches BirthYear and BiologicalSex to a specific row in diagnosed_data, where the Alzheimer_Diag = 0(negatives)
-        negatives = [row for row in self.new_data if row.BirthYear in diagnosed_data['BirthYear'].values and row.BiologicalSex in diagnosed_data['BiologicalSex'].values and row.Alzheimer_Diag == 0]
+        matched_negatives = non_diagnosed_data.merge(diagnosed_combinations, on=['BirthYear', 'BiologicalSex'], how='inner')
+        matched_lines = self.get_matched_lines(diagnosed_combinations, matched_negatives)
         b=7
+    def get_matched_lines(self, diagnosed_combinations, matched_negatives):
+        matched_lines = pd.DataFrame()
+
+        for _, combination in diagnosed_combinations.iterrows():
+            # Get the combination values
+            birth_year = combination['BirthYear']
+            biological_sex = combination['BiologicalSex']
+            count = combination['count']
+
+            # Filter the rows from matched_negatives based on the combination and count
+            matching_rows = matched_negatives[
+                (matched_negatives['BirthYear'] == birth_year) &
+                (matched_negatives['BiologicalSex'] == biological_sex)
+                ].head(count)
+
+            # Append the matching rows to the result DataFrame
+            matched_lines = matched_lines.append(matching_rows)
+
+        # Print the resulting DataFrame
+        return matched_lines
+
     def clean_nan_values(self):
         for col in self.new_data:
             if col in database.zero_cols:

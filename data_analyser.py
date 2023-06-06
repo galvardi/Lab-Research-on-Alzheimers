@@ -71,7 +71,7 @@ class DataAnalyser:
 
     def get_column_data(self, original_name,  new_column_name):
         if "_Diag" in original_name:
-            return self.data[original_name].apply(lambda s: 1 if s != "Prefer not to answer" else 0)
+            return self.data[original_name].apply(lambda s: 1 if not s else 0)
         if original_name in self.keep_same_cols:
             self.data[original_name].fillna("nan")
             return self.data[original_name].apply(lambda s: self.get_keep_cols(s))
@@ -112,7 +112,7 @@ class DataAnalyser:
 
     def get_diagnosed_since_recruitment(self):
         age_diagnosed = self.get_alzheimers_age_of_diagnosis()
-        return age_diagnosed.sub(self.data['AgeRecruitment'])
+        return int(age_diagnosed) - int(self.data['AgeRecruitment'])
 
     def find_max_value(self, row, categories_dict):
         # Generator expression to iterate over stripped elements
