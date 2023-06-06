@@ -6,6 +6,6 @@ ___in init comment___
 * set train ,test split - validate will be half of test(for now)
 
 
-* to get model prediction use model.test(data_to_test)
+* to get model prediction use predict func
 
-* to get gates ( i still neeed to work on it)
+* to get gates - use get_gates func

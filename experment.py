@@ -12,15 +12,15 @@ import data_processor
 import data_analyser
 import pandas as pd
 
-LABEL_COL_SMALL = 37
-LABEL_COL_BIG = 40
+# label_col = 37
+# label_col = 40
 
-SMALL = "temp_small.csv"
-BIG = "temp.csv"
+SMALL = "../saves/temp_small.csv"
+BIG = "../temp_tomer.csv"
 
 def get_data(use_full):
-    # saved = False
-    saved = True
+    saved = False
+    # saved = True
     if not saved: # if you want to load parsed dataset from disk
         if use_full:
             data = pd.read_csv(BIG).fillna("nan")
@@ -29,31 +29,18 @@ def get_data(use_full):
         analyser = data_analyser.DataAnalyser(data)
         processor = data_processor.DataProcessor(data, analyser)
         processor.process_data()
-        processor.new_data = processor.new_data.dropna() #remove nan
-        non_numeric_columns = processor.new_data.select_dtypes(exclude=[
-            pd.np.number]).columns.tolist() #todo fix them
-        processor.new_data = processor.new_data.drop(non_numeric_columns,
-                                                     axis=1)
-
-        #tring to extract all alzhimers people
-
         # for i, col in enumerate(processor.new_data):
         #     print(i, col)
-        #
-        # size = len(processor.new_data.Alzheimer_Diag)
-        # sick = np.arange(size)[processor.new_data['Alzheimer_Diag'] == 1]
-        # alzhmiers_only = processor.new_data.loc[sick, :]
-        # dataset_sick = alzhmiers_only.to_numpy()
-
+        label_col = processor.new_data.columns.get_loc("Alzhimer_Diag")
         dataset = processor.new_data.to_numpy()
         if use_full:
-            labels = dataset[:, LABEL_COL_BIG]
-            dataset = np.delete(dataset, LABEL_COL_BIG, axis=1)
+            labels = dataset[:, label_col]
+            dataset = np.delete(dataset, label_col, axis=1)
             np.save("saves/dataset_big.npy", dataset)
             np.save("saves/labels_big.npy", labels)
         else:
-            labels = dataset[:, LABEL_COL_SMALL]
-            dataset = np.delete(dataset, LABEL_COL_SMALL, axis=1)
+            labels = dataset[:, label_col]
+            dataset = np.delete(dataset, label_col, axis=1)
             np.save("saves/dataset.npy", dataset)
             np.save("saves/labels.npy", labels)
     else:
@@ -126,6 +113,9 @@ def callback(study, trial):
 def adjust_labels_for_model(labels_init):
     return np.c_[np.ones(labels_init.shape) - labels_init,labels_init]
 
+def predict(data):
+    global model
+    return model.test(data)
 def get_gates(data):
     global model
     return model.get_prob_alpha(data)
@@ -133,7 +123,7 @@ def get_gates(data):
 
 if __name__ == '__main__':
     #___init___
-    use_full_dataset = False #True means full dataset # False means small
+    use_full_dataset = True #True means full dataset # False means small
     use_vaildation = False
     train_portion = 0.7
     test_portion = 0.3
@@ -191,12 +181,13 @@ if __name__ == '__main__':
 
     # not using optima
     training_params = ({**training_params, 'lr':
-        0.07512140104607376, 'num_epoch': 5000})  # from optima
+        0.07512140104607376, 'num_epoch': 10})  # from optima
     train_model()
     # model.save(1, "saves/")
     # patient, patient_lab = dataset.test_data[0], dataset.test_labels[0]
     # model.sess.run()
-    predictions = model.test(X_test)
+    predictions = predict(X_test)
+    # patient = X_test[:2,:]
     # gates = get_gates(patient)
     print()
 
