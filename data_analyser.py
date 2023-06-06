@@ -18,7 +18,7 @@ class DataAnalyser:
                           'VigorousPhysicalActivity_NumDaysWeek',
                           'AgeLastEpisodeOfDepression', 'DBloodPressure',
                                'SBloodPressure', 'WalkingActivity_NumDaysWeek', 'SleepDuration',
-                               'BMI', 'AgeAtDeath']
+                               'BMI', 'AgeAtDeath', 'BirthYear']
         self.not_appears_in_new_data_cols = ["rs429358", "rs7412",
                                              # "BirthYear", "BiologicalSex",
                                   'eid', 'AgeRecruitment', 'ICD10_Dates', 'Alzheimer_Date',
@@ -112,7 +112,8 @@ class DataAnalyser:
 
     def get_diagnosed_since_recruitment(self):
         age_diagnosed = self.get_alzheimers_age_of_diagnosis()
-        return int(age_diagnosed) - int(self.data['AgeRecruitment'])
+        to_return = pd.DataFrame([(age_diagnosed[i] - int(self.data['AgeRecruitment'][i])) if (self.data['AgeRecruitment'][i] != "nan") else 0 for i in range(len(self.data))])
+        return to_return
 
     def find_max_value(self, row, categories_dict):
         # Generator expression to iterate over stripped elements

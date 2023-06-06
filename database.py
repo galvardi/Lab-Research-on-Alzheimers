@@ -78,7 +78,8 @@ means_cols = [
 'HDL_Cholesterol',
 'LDL_Cholesterol',
 'SeenGpForNervesAnxietyTensionDepression',
-'SeenShrinkForNervesAnxietyTensionDepression'
+'SeenShrinkForNervesAnxietyTensionDepression',
+'BirthYear'
 ]
 
 zero_cols = [

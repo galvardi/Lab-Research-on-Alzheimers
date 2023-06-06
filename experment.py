@@ -15,8 +15,8 @@ import pandas as pd
 LABEL_COL_SMALL = 37
 LABEL_COL_BIG = 40
 
-SMALL = "saves/temp_small.csv"
-BIG = "saves/temp_tomer.csv"
+SMALL = "temp_small.csv"
+BIG = "temp.csv"
 
 def get_data(use_full):
     # saved = False

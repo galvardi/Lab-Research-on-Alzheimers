@@ -1,3 +1,5 @@
+import numpy as np
+
 import data_analyser
 import pandas as pd
 import re
@@ -55,6 +57,8 @@ class DataProcessor:
 
     def clean_EPOE_and_years_values(self):
         # remove all the rows with EPOE = 1
+        self.new_data['BiologicalSex'] = self.new_data['BiologicalSex'].apply(lambda s: 1 if s == 'Female' else 0)
+        self.new_data['BirthYear'] = self.new_data['BirthYear'].astype(int)
         diagnosed_data = self.new_data.loc[(self.new_data['years_from_rec_to_diagnosis'] > 7) &
                                             (self.new_data['years_from_rec_to_diagnosis'] < 14) &
                                             (self.new_data['APOE_alles'] == 0)]
@@ -63,7 +67,9 @@ class DataProcessor:
         diagnosed_combinations = diagnosed_data.groupby(['BirthYear', 'BiologicalSex']).size().reset_index().rename(columns={0: 'count'})
         matched_negatives = non_diagnosed_data.merge(diagnosed_combinations, on=['BirthYear', 'BiologicalSex'], how='inner')
         matched_lines = self.get_matched_lines(diagnosed_combinations, matched_negatives)
+        result = pd.concat([diagnosed_data, matched_lines]).drop(["years_from_rec_to_diagnosis", "count"], axis=1)
         b=7
+
     def get_matched_lines(self, diagnosed_combinations, matched_negatives):
         matched_lines = pd.DataFrame()
 
@@ -86,14 +92,17 @@ class DataProcessor:
         return matched_lines
 
     def clean_nan_values(self):
+        # self.new_data.replace("nan", np.nan)
         for col in self.new_data:
             if col in database.zero_cols:
                 self.new_data[col] = self.new_data[col].fillna(0)
             if col in database.means_cols:
                 self.new_data[col] = self.new_data[col].fillna(self.new_data[col].mean())
+
     def add_years_from_rec_to_diagnosis(self):
         years_from_rec_to_diagnosis = self.data_analyser.get_diagnosed_since_recruitment()
         self.new_data['years_from_rec_to_diagnosis'] = years_from_rec_to_diagnosis
+
     def add_column_to_new_data(self, col):
         generated_new_col = self.data_analyser.get_column_data(col, col)
         if generated_new_col is not None:
