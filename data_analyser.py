@@ -112,7 +112,14 @@ class DataAnalyser:
 
     def get_diagnosed_since_recruitment(self):
         age_diagnosed = self.get_alzheimers_age_of_diagnosis()
-        to_return = pd.DataFrame([(age_diagnosed[i] - int(self.data['AgeRecruitment'][i])) if (self.data['AgeRecruitment'][i] != "nan") else 0 for i in range(len(self.data))])
+        rs = []
+        for i in range(len(self.data)):
+            if (self.data['AgeRecruitment'][i] != "nan"):
+                rs.append(age_diagnosed[i] - int(self.data['AgeRecruitment'][i]))
+            else:
+                rs.append(0)
+        to_return = pd.DataFrame(rs)
+        # to_return = pd.DataFrame([(age_diagnosed[i] - int(self.data['AgeRecruitment'][i])) if (self.data['AgeRecruitment'][i] != "nan") else 0 for i in range(len(self.data))])
         return to_return
 
     def find_max_value(self, row, categories_dict):

@@ -23,9 +23,9 @@ def get_data(use_full):
     saved = True
     if not saved: # if you want to load parsed dataset from disk
         if use_full:
-            data = pd.read_csv(BIG).fillna('Prefer not to answer')
+            data = pd.read_csv(BIG).fillna("nan")
         else:
-            data = pd.read_csv(SMALL).fillna('Prefer not to answer')
+            data = pd.read_csv(SMALL).fillna("nan")
         analyser = data_analyser.DataAnalyser(data)
         processor = data_processor.DataProcessor(data, analyser)
         processor.process_data()
