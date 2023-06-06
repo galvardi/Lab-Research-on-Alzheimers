@@ -67,7 +67,7 @@ class DataProcessor:
         diagnosed_combinations = diagnosed_data.groupby(['BirthYear', 'BiologicalSex']).size().reset_index().rename(columns={0: 'count'})
         matched_negatives = non_diagnosed_data.merge(diagnosed_combinations, on=['BirthYear', 'BiologicalSex'], how='inner')
         matched_lines = self.get_matched_lines(diagnosed_combinations, matched_negatives)
-        self.new_data = pd.concat([diagnosed_data, matched_lines]).drop(["years_from_rec_to_diagnosis", "count"], axis=1)
+        self.new_data = pd.concat([diagnosed_data, matched_lines]).drop(["years_from_rec_to_diagnosis", "count", "BirthYear", 'BiologicalSex', 'ICD10_Diags'], axis=1)
         b=7
 
     def get_matched_lines(self, diagnosed_combinations, matched_negatives):

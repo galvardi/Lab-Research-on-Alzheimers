@@ -71,7 +71,7 @@ class DataAnalyser:
 
     def get_column_data(self, original_name,  new_column_name):
         if "_Diag" in original_name:
-            return self.data[original_name].apply(lambda s: 1 if not s else 0)
+            return self.data[original_name].apply(lambda s: 1 if s != "nan" else 0)
         if original_name in self.keep_same_cols:
             self.data[original_name].fillna("nan")
             return self.data[original_name].apply(lambda s: self.get_keep_cols(s))
