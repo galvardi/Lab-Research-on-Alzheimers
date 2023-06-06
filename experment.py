@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from model import Model
 from model import convertToOneHot, DataSet_meta
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import jaccard_score
 import optuna
 
 
@@ -20,8 +21,9 @@ def see_res(path):
     old = np.load
     np.load = lambda *a, **k: old(*a, allow_pickle=True, **k)
     k = np.load(path)
-    print(k)
+    # print(k)
     np.load = old
+    return k
 
 def get_data(use_full):
     # saved = False
@@ -179,14 +181,37 @@ def split_data(dataset_init, labels, label_split, validation):
         Y_valid = Y_test
     return X_train, Y_train, X_test, Y_test, X_valid , Y_valid
 
+
+
+def visulize_gates():
+    gates = []
+    for i in range(10):
+        gates.append(np.load(f"saves/gates{str(i)}.npy"))
+    for i in range(1,10):
+        gates[0] += gates[i]
+    gates[0] = gates[0] / 10
+    avg_gate = gates[0]
+    feat_sum = np.sum(avg_gate, axis=0, keepdims=True) / avg_gate.shape[0]
+    k = see_res("saves/features.npy")
+    k = np.delete(k, 44)
+    feat_sum = feat_sum.flatten()
+    dict = {k[i]:feat_sum[i] for i in range(47) if feat_sum[i]>0}
+    print(dict)
+    plt.bar(np.arange(47), feat_sum.flatten())
+    plt.xlabel("feature idx")
+    plt.ylabel("percentage chosen")
+    plt.title("")
+    plt.show()
+
+
 if __name__ == '__main__':
     #___init___
 
 
     use_full_dataset = True #True means full dataset # False means small
     use_vaildation = False
-    use_optina = False
-    train_portion = 0.9
+    use_optuna = False # must use validation
+    train_portion = 0.8
     test_portion = 1 - train_portion
 
     dataset_init, labels_init, features = get_data(use_full_dataset)
@@ -235,7 +260,7 @@ if __name__ == '__main__':
     model = None
 
     # __optona__
-    if use_optina:
+    if use_optuna:
         best_model = None
         study = optuna.create_study(pruner=None)
         # originally 20 trials
@@ -245,16 +270,19 @@ if __name__ == '__main__':
     else:
         model = Model(**model_params)
         training_params = ({**training_params, 'lr':
-            0.05418309743636845, 'num_epoch': 5000})  # from optima
-        train_model()
+            0.05418309743636845, 'num_epoch': 2000})  # from optima
+        # train_model()
+
+    print("train -------- acc")
+    a, l = model.evaluate(X_train,Y_train, Y_train, None)
 
     predictions = predict(X_test)
     # patient = X_test[:2,:]
     gates = get_gates(X_test)
     # np.save("saves/features.npy",features)
-    np.save("saves/gates.npy",gates)
+    np.save("saves/gates10.npy",gates)
     np.save("saves/gates_labels.npy",return_labels(Y_test))
     np.save("saves/preds.npy",predictions)
+    visulize_gates()
     print()
-
 
