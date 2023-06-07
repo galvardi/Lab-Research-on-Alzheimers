@@ -133,6 +133,29 @@ class DataProcessor:
             if generated_new_col is not None:
                 self.new_data[cols_names_to_divide_to[i]] = generated_new_col
 
+    def normalizeData(self, df):
+        n = len(df)
+        nUnique = df.nunique()
+        nZeros = (df == 0).sum(0)
+        colsBool = nUnique.loc[nUnique <= 2].index.tolist()
+        colsPos = nZeros.loc[nZeros > n / 4].index.tolist()
+        colsPos = set(colsPos) - set(colsBool)
+        colsOther = set(df.columns) - set(colsBool) - set(colsPos)
+
+        data = {col: df[col].values for col in colsBool}
+        data.update({col: self.normalizeByMean(df[col].values) for col in colsPos})
+        data.update({col: self.normalizeBy01(df[col].values) for col in colsOther})
+
+        return pd.DataFrame(data)
+
+    def normalizeByMean(self, arr):
+        return arr / arr[arr > 0].mean()
+
+    def normalizeBy01(self, arr):
+        arr = arr - arr.mean()
+        arr /= arr.std()
+        return arr
+
 # reg = re.compile(rf'^R03\b|\|R03\b')
 # "isLowBP = df.ICD10_Diags.apply(lambda s: bool(reg.search(s)))"
 # "isLowBP.sum()
