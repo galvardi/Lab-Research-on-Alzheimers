@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from tqdm import trange
+
 from model import Model
 from model import convertToOneHot, DataSet_meta
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import jaccard_score
 import optuna
-
 
 #data
 import data_processor
@@ -75,6 +76,7 @@ def see_res(path):
     # print(k)
     np.load = old
     return k
+
 
 def get_data(use_full):
     # saved = False
@@ -232,14 +234,22 @@ def split_data(dataset_init, labels, label_split, validation):
 
 
 
-def visulize_gates():
+def visulize_gates(trainTest='train'):
+    print(f'Gates for {trainTest}:')
     gates = []
-    for i in range(10):
-        gates.append(np.load(f"saves/gates{i}.npy"))
-    for i in range(1,10):
+    for i in range(reps):
+        gates.append(np.load(f"saves/gates_{trainTest}{i}.npy"))
         gates[0] += gates[i]
-    gates[0] = gates[0] / 10
+    gates[0] = gates[0] / reps
     avg_gate = gates[0]
+
+    corr = (pd.DataFrame(avg_gate).corr()*1e2).fillna(0).astype(int)
+    corr = corr.values[np.tril_indices(avg_gate.shape[1], -1)]
+    print('Correlation values', corr.mean())
+    print(corr)
+
+    sbjSum = avg_gate.sum(1)
+    print(f'Num of sbjs with 0 feats: {(sbjSum==0).sum()}')
     feat_sum = np.sum(avg_gate, axis=0, keepdims=True) / avg_gate.shape[0]
     # k = see_res("saves/features.npy")
     # k = np.delete(k, 44)
@@ -247,26 +257,35 @@ def visulize_gates():
     # dict = {k[i]:feat_sum[i] for i in range(47) if feat_sum[i]>0}
     # print(dict)
     dict = {COLS_DICT[i]: feat_sum[i] for i in range(46) if feat_sum[i] > 0}
-    print(dict)
-    plt.bar(np.arange(46), feat_sum.flatten())
+    dict = {k:int(v*1e2) for k,v in dict.items()}
+    feats = sorted(dict.items(), key=lambda x: -x[1])
+    print(feats)
+    fig, ax = plt.subplots()
+    ax.bar(np.arange(46), feat_sum.flatten())
     plt.xlabel("feature idx")
     plt.ylabel("percentage chosen")
-    plt.title("")
+    plt.title(f"results for {trainTest}")
     plt.show()
+    np.save(f"saves/abg_gates_{trainTest}.npy",avg_gate)
+    k = jaccard_score(return_labels(Y_test), predictions)
+    print(f"for test_set - jaccard score - {k}")
 
 
 if __name__ == '__main__':
     #___init___
     use_full_dataset = True #True means full dataset # False means small
-    use_vaildation = True
-    use_optuna = True  # must use validation
+    use_vaildation = False
+    use_optuna = False  # must use validation
+    train = True  # train model
     train_portion = 0.8
     test_portion = 1 - train_portion
+    reps = 10
+
 
     dataset_init, labels_init, features = get_data(use_full_dataset)
     label_split = np.where(labels_init == 0)[0][0]
     labels = adjust_labels_for_model(labels_init)
-    for i in range(10):
+    for i in trange(reps):
         print(f"run {i}")
         X_train, Y_train, X_test, Y_test, X_valid , Y_valid = split_data(dataset_init, labels,
                                                        label_split, use_vaildation)
@@ -301,7 +320,7 @@ if __name__ == '__main__':
                         'display_step': 1000,
                         'activation_gating': 'tanh',
                         'activation_pred': 'l_relu',
-                        'lam': 1,'gamma1': 0.01}
+                        'lam': .25,'gamma1':5, 'gamma2':1}
 
         training_params = {'batch_size': X_train.shape[0]}
 
@@ -322,18 +341,22 @@ if __name__ == '__main__':
             model = Model(**model_params)
             training_params = ({**training_params, 'lr':
                 0.05418309743636845, 'num_epoch': 2000})  # from optima
-            train_model()
+            if train:
+                train_model()
 
         print("train -------- acc")
         a, l = model.evaluate(X_train,Y_train, Y_train, None)
 
         predictions = predict(X_test)
         # patient = X_test[:2,:]
-        gates = uiget_gates(X_test)
+        gates_test = uiget_gates(X_test)
+        gates_train = uiget_gates(X_train)
         # np.save("saves/features.npy",features)
-        np.save(f"saves/gates{i}.npy",gates)
+        np.save(f"saves/gates_test{i}.npy",gates_test)
+        np.save(f"saves/gates_train{i}.npy",gates_train)
         np.save("saves/gates_labels.npy",return_labels(Y_test))
         np.save("saves/preds.npy",predictions)
-    visulize_gates()
+    visulize_gates('train')
+    visulize_gates('test')
     print()
 
