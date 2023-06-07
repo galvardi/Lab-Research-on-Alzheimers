@@ -84,7 +84,7 @@ class DataProcessor:
             ["years_from_rec_to_diagnosis", "count", "BirthYear", 'BiologicalSex',
              'ICD10_Diags', 'alzheimer_ICD10', 'alcohol_ICD10', 'MedsInsulin',
              'MedsCardiovascular', 'DurationHeavyDIY', 'DurationModerateActivity',
-             'WalkingActivity_NumDaysWeek','ModeratePhysicalActivity_NumDaysWeek',
+             'WalkingActivity_NumDaysWeek','ModeratePhysicalActivity_NumDaysWeek', 'AgeAtDeath'
              ], axis=1)
 
     def get_matched_lines(self, diagnosed_combinations, matched_negatives):
