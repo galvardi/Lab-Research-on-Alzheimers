@@ -240,7 +240,8 @@ def visulize_gates(trainTest='train'):
     for i in range(reps):
         gates.append(np.load(f"saves/gates_{trainTest}{i}.npy"))
         gates[0] += gates[i]
-    gates[0] = gates[0] / reps
+        gates[0] /= gates[0].shape[0]
+    gates[0] = gates[0] / (reps*2)
     avg_gate = gates[0]
 
     corr = (pd.DataFrame(avg_gate).corr()*1e2).fillna(0).astype(int)
@@ -250,7 +251,7 @@ def visulize_gates(trainTest='train'):
 
     sbjSum = avg_gate.sum(1)
     print(f'Num of sbjs with 0 feats: {(sbjSum==0).sum()}')
-    feat_sum = np.sum(avg_gate, axis=0, keepdims=True) / avg_gate.shape[0]
+    feat_sum = np.sum(avg_gate, axis=0, keepdims=True)
     # k = see_res("saves/features.npy")
     # k = np.delete(k, 44)
     feat_sum = feat_sum.flatten()
@@ -289,6 +290,12 @@ if __name__ == '__main__':
         print(f"run {i}")
         X_train, Y_train, X_test, Y_test, X_valid , Y_valid = split_data(dataset_init, labels,
                                                        label_split, use_vaildation)
+        pd.DataFrame(X_train).to_csv(f"saves/DataLabels/X_train{i}.csv")
+        pd.DataFrame(Y_train).to_csv(f"saves/DataLabels/Y_train{i}.csv")
+        pd.DataFrame(X_test).to_csv(f"saves/DataLabels/X_test{i}.csv")
+        pd.DataFrame(Y_test).to_csv(f"saves/DataLabels/Y_test{i}.csv")
+        pd.DataFrame(X_valid).to_csv(f"saves/DataLabels/X_valid{i}.csv")
+        pd.DataFrame(Y_valid).to_csv(f"saves/DataLabels/Y_valid{i}.csv")
 
 
         # organize data for model
@@ -320,7 +327,7 @@ if __name__ == '__main__':
                         'display_step': 1000,
                         'activation_gating': 'tanh',
                         'activation_pred': 'l_relu',
-                        'lam': .25,'gamma1':5, 'gamma2':1}
+                        'lam': .25,'gamma1':50, 'gamma2':100}
 
         training_params = {'batch_size': X_train.shape[0]}
 
@@ -353,9 +360,13 @@ if __name__ == '__main__':
         gates_train = uiget_gates(X_train)
         # np.save("saves/features.npy",features)
         np.save(f"saves/gates_test{i}.npy",gates_test)
+        pd.DataFrame(gates_test).to_csv(f"saves/csvGatesLabels/gates_test{i}.csv")
         np.save(f"saves/gates_train{i}.npy",gates_train)
+        pd.DataFrame(gates_test).to_csv(f"saves/csvGatesLabels/gates_train{i}.csv")
         np.save("saves/gates_labels.npy",return_labels(Y_test))
+        pd.DataFrame(return_labels(Y_test)).to_csv(f"saves/csvGatesLabels/gates_labels{i}.csv")
         np.save("saves/preds.npy",predictions)
+        pd.DataFrame(predictions).to_csv(f"saves/csvGatesLabels/preds{i}.csv")
     visulize_gates('train')
     visulize_gates('test')
     print()
