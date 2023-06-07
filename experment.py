@@ -13,9 +13,60 @@ import data_processor
 import data_analyser
 import pandas as pd
 
+# label_col = 37
+# label_col = 40
 
 SMALL = "saves/small_data.csv"
 BIG = "saves/temp.csv"
+COLS_DICT = {
+0: 'depress_medication',
+1: 'stress_medication',
+2: 'anxiety_medication',
+3: 'depression_ICD10',
+4: 'anxiety_ICD10',
+5: 'gingivitis_ICD10',
+6: 'diabetes_ICD10',
+7: 'cardiovascular_ICD10',
+8: 'smoking_ICD10',
+9: 'cholesterol_ICD10',
+10: 'CardiovascularDiagnosis',
+11: 'CardioMedications',
+12: 'InsulinMedications',
+13: 'CholesterolMedications',
+14: 'Diabetes diagnosed',
+15: 'AgeOfStopSmoking',
+16: 'AgeLastEpisodeOfDepression',
+17: 'DurationOfWorstDepression',
+18: 'Qualifications',
+19: 'AlcoholFrequency',
+20: 'ProfessionalInformedAnxiety',
+21: 'ProfessionalInformedDepression',
+22: 'IllnessInjuriesStressLast2Years',
+23: 'FrequencyFriendsFamilyVisits',
+24: 'MentalActivities',
+25: 'SocialActivities',
+26: 'DentalProblems',
+27: 'DBloodPressure',
+28: 'SBloodPressure',
+29: 'PlaysComputer',
+30: 'HearingAid',
+31: 'LDL_Cholesterol',
+32: 'HDL_Cholesterol',
+33: 'Insomnia',
+34: 'VigorousPhysicalActivity_NumDaysWeek',
+35: 'SmokingStatus',
+36: 'SmokingPacksYears',
+37: 'SleepDuration',
+38: 'BMI',
+39: 'BipolarAndMajorDepressionStat',
+40: 'SeenGpForNervesAnxietyTensionDepression',
+41: 'SeenShrinkForNervesAnxietyTensionDepression',
+42: 'HearingDifficulties',
+# 43: 'Alzheimer_Diag',
+43: 'Alcohol_Diag',
+44: 'APOE_alles',
+45: 'Moderate_Activity',
+}
 
 def see_res(path):
     old = np.load
@@ -45,11 +96,13 @@ def get_data(use_full):
             dataset = np.delete(dataset, label_col, axis=1)
             np.save("saves/dataset_big.npy", dataset)
             np.save("saves/labels_big.npy", labels)
+            print("saved full database")
         else:
             labels = dataset[:, label_col]
             dataset = np.delete(dataset, label_col, axis=1)
             np.save("saves/dataset.npy", dataset)
             np.save("saves/labels.npy", labels)
+            print("saved small database")
     else:
         np_load_old = np.load
         # modify the default parameters of np.load
@@ -86,12 +139,8 @@ def train_model(): # for training without trials
 def lstg_objective(trial):
     global model
 
-    training_params['lr'] = trial.suggest_loguniform('learning_rate', 0.01,
-                                                     0.1)
-    training_params["num_epoch"] = trial.suggest_categorical('num_epoch',
-                                                             [2000, 3000,
-                                                              5000, 7000,
-                                                              9000])
+    training_params['lr'] = trial.suggest_loguniform('learning_rate', 0.05, 0.1)
+    training_params["num_epoch"] = trial.suggest_categorical('num_epoch',[2000, 5000, 7000, 9000])
 
     model = Model(**model_params)
     train_acces, train_losses, val_acces, val_losses = model.train(
@@ -127,7 +176,7 @@ def return_labels(labels):
 def predict(data):
     global model
     return model.test(data)
-def get_gates(data):
+def uiget_gates(data):
     global model
     return model.get_prob_alpha(data)
 
@@ -186,18 +235,20 @@ def split_data(dataset_init, labels, label_split, validation):
 def visulize_gates():
     gates = []
     for i in range(10):
-        gates.append(np.load(f"saves/gates{str(i)}.npy"))
+        gates.append(np.load(f"saves/gates{i}.npy"))
     for i in range(1,10):
         gates[0] += gates[i]
     gates[0] = gates[0] / 10
     avg_gate = gates[0]
     feat_sum = np.sum(avg_gate, axis=0, keepdims=True) / avg_gate.shape[0]
-    k = see_res("saves/features.npy")
-    k = np.delete(k, 44)
+    # k = see_res("saves/features.npy")
+    # k = np.delete(k, 44)
     feat_sum = feat_sum.flatten()
-    dict = {k[i]:feat_sum[i] for i in range(47) if feat_sum[i]>0}
+    # dict = {k[i]:feat_sum[i] for i in range(47) if feat_sum[i]>0}
+    # print(dict)
+    dict = {COLS_DICT[i]: feat_sum[i] for i in range(46) if feat_sum[i] > 0}
     print(dict)
-    plt.bar(np.arange(47), feat_sum.flatten())
+    plt.bar(np.arange(46), feat_sum.flatten())
     plt.xlabel("feature idx")
     plt.ylabel("percentage chosen")
     plt.title("")
@@ -206,83 +257,83 @@ def visulize_gates():
 
 if __name__ == '__main__':
     #___init___
-
-
     use_full_dataset = True #True means full dataset # False means small
-    use_vaildation = False
-    use_optuna = False # must use validation
+    use_vaildation = True
+    use_optuna = True  # must use validation
     train_portion = 0.8
     test_portion = 1 - train_portion
 
     dataset_init, labels_init, features = get_data(use_full_dataset)
     label_split = np.where(labels_init == 0)[0][0]
     labels = adjust_labels_for_model(labels_init)
-    X_train, Y_train, X_test, Y_test, X_valid , Y_valid = split_data(dataset_init, labels,
-                                                   label_split, use_vaildation)
+    for i in range(10):
+        print(f"run {i}")
+        X_train, Y_train, X_test, Y_test, X_valid , Y_valid = split_data(dataset_init, labels,
+                                                       label_split, use_vaildation)
 
 
-    # organize data for model
+        # organize data for model
 
 
-    dataset = DataSet_meta(
-        **{'_data': X_train, '_labels': Y_train,
-           '_meta': Y_train,
-           '_valid_data': X_valid, '_valid_labels': Y_valid,
-           '_valid_meta': Y_valid,
-           '_test_data': X_test, '_test_labels': Y_test,
-           '_test_meta': Y_test, })
+        dataset = DataSet_meta(
+            **{'_data': X_train, '_labels': Y_train,
+               '_meta': Y_train,
+               '_valid_data': X_valid, '_valid_labels': Y_valid,
+               '_valid_meta': Y_valid,
+               '_test_data': X_test, '_test_labels': Y_test,
+               '_test_meta': Y_test, })
 
-    # model_params = {'input_node': X_train.shape[1],
-    #                 'hidden_layers_node': [500, 100, 1],
-    #                 'output_node': 2,  # classification
-    #                 'feature_selection': True,
-    #                 'gating_net_hidden_layers_node': [100],
-    #                 'display_step': 1000,
-    #                 'activation_gating': 'tanh',
-    #                 'activation_pred': 'l_relu',
-    #                 'lam': 1, 'gamma1': 0.1}
+        # model_params = {'input_node': X_train.shape[1],
+        #                 'hidden_layers_node': [500, 100, 1],
+        #                 'output_node': 2,  # classification
+        #                 'feature_selection': True,
+        #                 'gating_net_hidden_layers_node': [100],
+        #                 'display_step': 1000,
+        #                 'activation_gating': 'tanh',
+        #                 'activation_pred': 'l_relu',
+        #                 'lam': 1, 'gamma1': 0.1}
 
-    model_params = {'input_node': X_train.shape[1],
-                    'hidden_layers_node': [100, 50, 30],
-                    'output_node': 2, #classification
-                    'feature_selection': True,
-                    'gating_net_hidden_layers_node': [100],
-                    'display_step': 1000,
-                    'activation_gating': 'tanh',
-                    'activation_pred': 'l_relu',
-                    'lam': 1,'gamma1': 10}
+        model_params = {'input_node': X_train.shape[1],
+                        'hidden_layers_node': [100, 50, 30],
+                        'output_node': 2, #classification
+                        'feature_selection': True,
+                        'gating_net_hidden_layers_node': [100],
+                        'display_step': 1000,
+                        'activation_gating': 'tanh',
+                        'activation_pred': 'l_relu',
+                        'lam': 1,'gamma1': 0.01}
 
-    training_params = {'batch_size': X_train.shape[0]}
+        training_params = {'batch_size': X_train.shape[0]}
 
 
 
-    # using trials optima :
-    model = None
+        # using trials optima :
+        model = None
 
-    # __optona__
-    if use_optuna:
-        best_model = None
-        study = optuna.create_study(pruner=None)
-        # originally 20 trials
-        study.optimize(lstg_objective, n_trials=3, callbacks=[callback])
+        # __optona__
+        if use_optuna:
+            best_model = None
+            study = optuna.create_study(pruner=None)
+            # originally 20 trials
+            study.optimize(lstg_objective, n_trials=3, callbacks=[callback])
 
-    # not using optima
-    else:
-        model = Model(**model_params)
-        training_params = ({**training_params, 'lr':
-            0.05418309743636845, 'num_epoch': 2000})  # from optima
-        # train_model()
+        # not using optima
+        else:
+            model = Model(**model_params)
+            training_params = ({**training_params, 'lr':
+                0.05418309743636845, 'num_epoch': 2000})  # from optima
+            train_model()
 
-    print("train -------- acc")
-    a, l = model.evaluate(X_train,Y_train, Y_train, None)
+        print("train -------- acc")
+        a, l = model.evaluate(X_train,Y_train, Y_train, None)
 
-    predictions = predict(X_test)
-    # patient = X_test[:2,:]
-    gates = get_gates(X_test)
-    # np.save("saves/features.npy",features)
-    np.save("saves/gates10.npy",gates)
-    np.save("saves/gates_labels.npy",return_labels(Y_test))
-    np.save("saves/preds.npy",predictions)
+        predictions = predict(X_test)
+        # patient = X_test[:2,:]
+        gates = uiget_gates(X_test)
+        # np.save("saves/features.npy",features)
+        np.save(f"saves/gates{i}.npy",gates)
+        np.save("saves/gates_labels.npy",return_labels(Y_test))
+        np.save("saves/preds.npy",predictions)
     visulize_gates()
     print()
 
