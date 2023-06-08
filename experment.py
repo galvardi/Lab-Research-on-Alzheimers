@@ -63,7 +63,6 @@ COLS_DICT = {
 40: 'SeenGpForNervesAnxietyTensionDepression',
 41: 'SeenShrinkForNervesAnxietyTensionDepression',
 42: 'HearingDifficulties',
-# 43: 'Alzheimer_Diag',
 43: 'Alcohol_Diag',
 44: 'APOE_alles',
 45: 'Moderate_Activity',
@@ -327,7 +326,7 @@ if __name__ == '__main__':
                         'display_step': 1000,
                         'activation_gating': 'tanh',
                         'activation_pred': 'l_relu',
-                        'lam': .25,'gamma1':50, 'gamma2':100}
+                        'lam': .5,'gamma1':0, 'gamma2':0}
 
         training_params = {'batch_size': X_train.shape[0]}
 
