@@ -1,7 +1,7 @@
 The project is composed of two parts, the first a parser which uses and preprocesses the data from the UK BIObank.
 The second a counterfactual prediction model
 
-res.py file contains the results of our analysis
+Research Poster.pdf file contains the results of our analysis
 
 the base counterfactual model was taken from the great article yang22i, "https://arxiv.org/abs/2106.06468"
 ____ using the model ____
